@@ -190,6 +190,17 @@ python manage.py test reeds
 - Tracking: description, goal, success_rating
 - Helps analyze which modifications improve performance
 
+## Security Notes
+
+**Important**: This project is configured for development use. Before deploying to production:
+
+1. **Secret Key**: Move `SECRET_KEY` to environment variables and never commit it to version control
+2. **Debug Mode**: Set `DEBUG = False` in production
+3. **Allowed Hosts**: Configure `ALLOWED_HOSTS` with your production domains
+4. **CORS**: Restrict `CORS_ALLOW_ALL_ORIGINS` to specific allowed origins
+5. **Authentication**: Implement proper authentication and permission classes for the API
+6. **Database**: Use a production database (PostgreSQL, MySQL) instead of SQLite
+
 ## License
 
 This project is licensed under the terms in the LICENSE file.

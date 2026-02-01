@@ -55,12 +55,15 @@ class ReedViewSet(viewsets.ModelViewSet):
         for mod in reed.modifications.values('modification_type').annotate(count=Count('id')):
             mod_types[mod['modification_type']] = mod['count']
         
+        # Calculate age in days from creation to now
+        from django.utils import timezone
+        age_days = (timezone.now() - reed.created_date).days
+        
         return Response({
             'reed_id': reed.id,
             'reed_name': reed.name,
             'status': reed.status,
-            'age_days': (reed.quality_snapshots.latest('timestamp').timestamp - reed.created_date).days 
-                       if reed.quality_snapshots.exists() else 0,
+            'age_days': age_days,
             'quality_metrics': quality_stats,
             'usage_metrics': usage_stats,
             'modification_metrics': {
