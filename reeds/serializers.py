@@ -1,5 +1,19 @@
 from rest_framework import serializers
-from .models import Reed, UsageSession, QualitySnapshot, Modification
+from .models import Reed, UsageSession, QualitySnapshot, Modification, Thread, Staple
+
+
+class ThreadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Thread
+        fields = ['id', 'color', 'gauge']
+        read_only_fields = ['id']
+
+
+class StapleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Staple
+        fields = ['id', 'material', 'shape', 'make', 'length_mm', 'quantity']
+        read_only_fields = ['id']
 
 
 class ModificationSerializer(serializers.ModelSerializer):
@@ -30,11 +44,14 @@ class ReedSerializer(serializers.ModelSerializer):
     usage_sessions = UsageSessionSerializer(many=True, read_only=True)
     quality_snapshots = QualitySnapshotSerializer(many=True, read_only=True)
     modifications = ModificationSerializer(many=True, read_only=True)
+    thread_detail = ThreadSerializer(source='thread', read_only=True)
+    staple_detail = StapleSerializer(source='staple', read_only=True)
     
     class Meta:
         model = Reed
         fields = [
-            'id', 'name', 'created_date', 'status', 'cane_source', 'shape',
+            'id', 'name', 'thread', 'thread_detail', 'staple', 'staple_detail',
+            'created_date', 'status', 'cane_source', 'shape',
             'gouge_thickness', 'notes', 'total_play_time_minutes',
             'usage_sessions', 'quality_snapshots', 'modifications'
         ]
@@ -43,10 +60,14 @@ class ReedSerializer(serializers.ModelSerializer):
 
 class ReedListSerializer(serializers.ModelSerializer):
     """Lighter serializer for list views without nested relationships"""
+    thread_detail = ThreadSerializer(source='thread', read_only=True)
+    staple_detail = StapleSerializer(source='staple', read_only=True)
+    
     class Meta:
         model = Reed
         fields = [
-            'id', 'name', 'created_date', 'status', 'cane_source', 'shape',
+            'id', 'name', 'thread', 'thread_detail', 'staple', 'staple_detail',
+            'created_date', 'status', 'cane_source', 'shape',
             'gouge_thickness', 'total_play_time_minutes'
         ]
         read_only_fields = ['id', 'total_play_time_minutes']

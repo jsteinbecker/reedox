@@ -1,5 +1,19 @@
 from django.contrib import admin
-from .models import Reed, UsageSession, QualitySnapshot, Modification
+from .models import Reed, UsageSession, QualitySnapshot, Modification, Thread, Staple
+
+
+@admin.register(Thread)
+class ThreadAdmin(admin.ModelAdmin):
+    list_display = ('color', 'gauge')
+    search_fields = ('color', 'gauge')
+
+
+@admin.register(Staple)
+class StapleAdmin(admin.ModelAdmin):
+    list_display = ('material', 'shape', 'make', 'length_mm', 'quantity')
+    list_filter = ('material', 'shape')
+    search_fields = ('make',)
+    list_editable = ('quantity',)  # Allow quick quantity editing in list view
 
 
 class UsageSessionInline(admin.TabularInline):
@@ -23,14 +37,14 @@ class ModificationInline(admin.TabularInline):
 
 @admin.register(Reed)
 class ReedAdmin(admin.ModelAdmin):
-    list_display = ('name', 'status', 'created_date', 'total_play_time_minutes', 'cane_source')
-    list_filter = ('status', 'created_date', 'cane_source')
+    list_display = ('name', 'thread', 'staple', 'status', 'created_date', 'total_play_time_minutes', 'cane_source')
+    list_filter = ('status', 'created_date', 'thread', 'staple')
     search_fields = ('name', 'notes', 'cane_source')
     readonly_fields = ('total_play_time_minutes',)
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'status', 'created_date', 'total_play_time_minutes')
+            'fields': ('name', 'thread', 'staple', 'status', 'created_date', 'total_play_time_minutes')
         }),
         ('Construction Details', {
             'fields': ('cane_source', 'shape', 'gouge_thickness')

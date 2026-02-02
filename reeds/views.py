@@ -2,10 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db.models import Avg, Count, Sum
-from .models import Reed, UsageSession, QualitySnapshot, Modification
+from .models import Reed, UsageSession, QualitySnapshot, Modification, Thread, Staple
 from .serializers import (
     ReedSerializer, ReedListSerializer, UsageSessionSerializer,
-    QualitySnapshotSerializer, ModificationSerializer
+    QualitySnapshotSerializer, ModificationSerializer, ThreadSerializer, StapleSerializer
 )
 
 
@@ -131,4 +131,46 @@ class ModificationViewSet(viewsets.ModelViewSet):
     serializer_class = ModificationSerializer
     filterset_fields = ['reed', 'modification_type']
     ordering_fields = ['timestamp', 'success_rating']
+
+
+class ThreadViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Thread model.
+    """
+    queryset = Thread.objects.all()
+    serializer_class = ThreadSerializer
+    filterset_fields = ['color']
+    ordering_fields = ['color']
+
+
+class StapleViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for Staple model with bulk creation support.
+    """
+    queryset = Staple.objects.all()
+    serializer_class = StapleSerializer
+    filterset_fields = ['material', 'shape', 'make']
+    ordering_fields = ['material', 'shape']
+    
+    @action(detail=False, methods=['post'])
+    def bulk_create(self, request):
+        """
+        Create multiple staples of the same type at once.
+        Example: POST with material='brass', shape='recessed', make='Pisoni', 
+                 length_mm=47, quantity=5
+        """
+        quantity = request.data.get('quantity', 1)
+        
+        if quantity < 1:
+            return Response(
+                {'error': 'Quantity must be at least 1'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create a single staple with the specified quantity
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 

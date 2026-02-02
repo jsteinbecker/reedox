@@ -3,6 +3,67 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 
 
+class Thread(models.Model):
+    """
+    Represents thread used for wrapping reeds.
+    """
+    color = models.CharField(max_length=50, help_text="Thread color")
+    gauge = models.CharField(max_length=50, blank=True, help_text="Thread gauge/thickness (optional)")
+    
+    class Meta:
+        ordering = ['color']
+    
+    def __str__(self):
+        if self.gauge:
+            return f"{self.color} ({self.gauge})"
+        return self.color
+
+
+class Staple(models.Model):
+    """
+    Represents a staple/tube for reed construction.
+    """
+    MATERIAL_CHOICES = [
+        ('brass', 'Brass'),
+        ('nickel_silver', 'Nickel Silver'),
+        ('silver', 'Silver'),
+        ('copper', 'Copper'),
+        ('other', 'Other'),
+    ]
+    
+    SHAPE_CHOICES = [
+        ('recessed', 'Recessed'),
+        ('o_ring', 'O-Ring'),
+        ('flat', 'Flat'),
+        ('other', 'Other'),
+    ]
+    
+    material = models.CharField(max_length=50, choices=MATERIAL_CHOICES, help_text="Staple material")
+    shape = models.CharField(max_length=50, choices=SHAPE_CHOICES, help_text="Staple shape")
+    make = models.CharField(max_length=100, blank=True, help_text="Manufacturer/make (optional)")
+    length_mm = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text="Staple length in mm (e.g., 47mm)"
+    )
+    
+    # Track inventory
+    quantity = models.IntegerField(default=1, help_text="Number of staples of this type in stock")
+    
+    class Meta:
+        ordering = ['material', 'shape']
+    
+    def __str__(self):
+        parts = [self.get_shape_display(), self.get_material_display()]
+        if self.length_mm:
+            parts.append(f"{self.length_mm}mm")
+        if self.make:
+            parts.append(self.make)
+        result = " ".join(parts)
+        if self.quantity > 1:
+            result += f" (×{self.quantity})"
+        return result
+
+
 class Reed(models.Model):
     """
     Represents an oboe reed with its basic information.
@@ -15,13 +76,15 @@ class Reed(models.Model):
         ('retired', 'Retired'),
     ]
     
-    name = models.CharField(max_length=100, help_text="Name or identifier for this reed")
+    name = models.CharField(max_length=100, blank=True, help_text="Name or identifier for this reed (optional)")
+    thread = models.ForeignKey(Thread, on_delete=models.PROTECT, related_name='reeds', help_text="Thread used for this reed")
+    staple = models.ForeignKey(Staple, on_delete=models.PROTECT, related_name='reeds', help_text="Staple used for this reed")
     created_date = models.DateTimeField(default=timezone.now, help_text="When the reed was created/started")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
     
     # Reed construction details
     cane_source = models.CharField(max_length=200, blank=True, help_text="Source or brand of cane")
-    shape = models.CharField(max_length=100, blank=True, help_text="Shape used for this reed")
+    shape = models.CharField(max_length=100, blank=True, help_text="Cane shape used for this reed")
     gouge_thickness = models.DecimalField(
         max_digits=4, decimal_places=2, null=True, blank=True,
         help_text="Gouge thickness in mm"
@@ -37,6 +100,14 @@ class Reed(models.Model):
     
     class Meta:
         ordering = ['-created_date']
+    
+    def save(self, *args, **kwargs):
+        # Auto-generate name if not provided
+        if not self.name:
+            thread_name = str(self.thread)
+            staple_name = f"{self.staple.get_shape_display()} {self.staple.get_material_display()}"
+            self.name = f"{thread_name} / {staple_name}"
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.name} ({self.status})"
